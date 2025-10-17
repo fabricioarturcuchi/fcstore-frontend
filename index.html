@@ -30,6 +30,7 @@
       cursor: pointer;
       font-weight: bold;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      transition: background 0.3s;
     }
     .cart-button:hover {
       background: #f8f8f8;
@@ -37,9 +38,21 @@
 
     .produtos {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(4, 1fr); /* 4 colunas fixas */
       gap: 20px;
       padding: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .produtos {
+        grid-template-columns: repeat(2, 1fr); /* 2 colunas em telas médias */
+      }
+    }
+
+    @media (max-width: 500px) {
+      .produtos {
+        grid-template-columns: 1fr; /* 1 coluna em telas pequenas */
+      }
     }
 
     .produto {
@@ -70,6 +83,7 @@
       border-radius: 5px;
       cursor: pointer;
       margin-top: 10px;
+      transition: background 0.3s;
     }
 
     .produto button:hover {
@@ -108,12 +122,12 @@
     const carrinhoKey = 'carrinho';
     let carrinho = JSON.parse(localStorage.getItem(carrinhoKey)) || [];
 
-    // Atualiza contador do carrinho
+    // Atualiza o contador exibido no botão do carrinho
     function atualizarContadorCarrinho() {
       document.getElementById('contadorCarrinho').textContent = carrinho.length;
     }
 
-    // Adiciona item ao carrinho
+    // Adiciona produto ao carrinho e salva no localStorage
     function adicionarAoCarrinho(id, nome, preco) {
       carrinho.push({ id, nome, preco });
       localStorage.setItem(carrinhoKey, JSON.stringify(carrinho));
@@ -121,12 +135,12 @@
       atualizarContadorCarrinho();
     }
 
-    // Redireciona para página do carrinho
+    // Redireciona para a página do carrinho
     function verCarrinho() {
       window.location.href = "https://fabricioarturcuchi.github.io/fcstore-frontend/cart.html";
     }
 
-    // Carrega produtos da API
+    // Carrega os produtos da API e exibe na página
     async function carregarProdutos() {
       try {
         const response = await fetch('https://fcstore-backend.onrender.com/api/products');
@@ -150,7 +164,7 @@
       }
     }
 
-    // Inicialização
+    // Inicializa a contagem do carrinho e carrega produtos ao abrir a página
     atualizarContadorCarrinho();
     carregarProdutos();
   </script>
