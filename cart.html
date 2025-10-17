@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Carrinho - FC STORE</title>
+<style>
+body{font-family:Inter,Arial;margin:0;padding:0;background:#fff;color:#111}
+.header{background:linear-gradient(90deg,#111,#222);color:white;padding:12px 18px}
+.container{max-width:1000px;margin:0 auto;padding:18px}
+.list{background:white;border-radius:10px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,0.06)}
+.item{display:flex;gap:12px;align-items:center;padding:8px;border-bottom:1px solid #f1f1f1}
+.qty{display:flex;gap:6px;align-items:center}
+.btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+.btn-primary{background:#111;color:white}
+.btn-wp{background:linear-gradient(90deg,#ff69b4,#ff3d9a);color:white}
+.form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.form input{padding:10px;border-radius:8px;border:1px solid #eee}
+.message{padding:12px;background:#e8f9f1;border-radius:8px;color:#076a3b;margin-top:12px}
+</style></head><body>
+<header class="header"><div class="container"><a href="index.html" style="color:white;text-decoration:none">← Voltar à loja</a></div></header>
+<main class="container">
+  <h2>Seu Carrinho</h2>
+  <div id="cart" class="list"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+    <div><strong>Total: </strong><span id="total">R$ 0,00</span></div>
+    <div>
+      <button class="btn btn-primary" id="continue">Continuar comprando</button>
+      <button class="btn btn-wp" id="checkout">Finalizar Pedido</button>
+    </div>
+  </div>
+  <div id="checkoutForm" style="display:none">
+    <h3>Dados para contato</h3>
+    <div class="form">
+      <input id="name" placeholder="Nome completo" style="flex:1"/>
+      <input id="phone" placeholder="Telefone (ex: 49 9xxxx-xxxx)" style="flex:1"/>
+      <button class="btn btn-primary" id="send">Enviar Pedido</button>
+    </div>
+    <div id="msg" style="display:none" class="message"></div>
+  </div>
+</main>
+<script>
+let cart = JSON.parse(localStorage.getItem('fc_cart')||'[]');
+function render(){
+  const el = document.getElementById('cart');
+  if(cart.length===0){ el.innerHTML='<p>Seu carrinho está vazio.</p>'; document.getElementById('total').textContent='R$ 0,00'; return; }
+  el.innerHTML = cart.map(i=>`
+    <div class="item">
+      <img src="${i.img}" style="width:100px;height:70px;object-fit:cover;border-radius:6px"/>
+      <div style="flex:1">
+        <strong>${i.name}</strong><br/>R$ ${Number(i.price).toFixed(2).replace('.',',')}
+      </div>
+      <div class="qty">
+        <button onclick="change(${i.id},-1)">-</button>
+        <div id="q${i.id}">${i.qty}</div>
+        <button onclick="change(${i.id},1)">+</button>
+        <button onclick="remove(${i.id})" style="margin-left:8px">Remover</button>
+      </div>
+    </div>
+  `).join('');
+  const total = cart.reduce((s,i)=>s + i.price*i.qty,0);
+  document.getElementById('total').textContent = 'R$ ' + total.toFixed(2).replace('.',',');
+}
+function change(id, delta){
+  const it = cart.find(i=>i.id===id);
+  if(!it) return;
+  it.qty += delta;
+  if(it.qty<=0) cart = cart.filter(x=>x.id!==id);
+  save(); render();
+}
+function remove(id){ cart = cart.filter(x=>x.id!==id); save(); render(); }
+function save(){ localStorage.setItem('fc_cart', JSON.stringify(cart)); }
+document.getElementById('continue').addEventListener('click', ()=>{ location.href='index.html'; });
+document.getElementById('checkout').addEventListener('click', ()=>{ if(cart.length===0){ alert('Carrinho vazio'); return;} document.getElementById('checkoutForm').style.display='block'; window.scrollTo({top:document.getElementById('checkoutForm').offsetTop, behavior:'smooth'}); });
+document.getElementById('send').addEventListener('click', ()=>{
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  if(!name||!phone){ alert('Preencha nome e telefone'); return; }
+  const itemsText = cart.map(i=>`- ${i.name} x${i.qty} (R$ ${ (i.price*i.qty).toFixed(2).replace('.',',') })`).join('%0A');
+  const total = cart.reduce((s,i)=>s + i.price*i.qty,0).toFixed(2).replace('.',',');
+  const message = `*Novo pedido*%0ACliente: ${name}%0ATelefone: ${phone}%0A%0AItens:%0A${itemsText}%0A%0ATotal: R$ ${total}`;
+  const phoneSeller = '5549933816445';
+  window.open(`https://wa.me/${phoneSeller}?text=${message}`,'_blank');
+  document.getElementById('msg').style.display='block'; document.getElementById('msg').textContent='✅ Pedido enviado com sucesso! Em breve entraremos em contato pelo WhatsApp.';
+  cart = []; save(); render();
+});
+render();
+</script>
+</body></html>

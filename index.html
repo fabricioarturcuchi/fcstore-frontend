@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FC STORE BUSINESS</title>
+<style>
+:root{--pink:#ff69b4;--deep-pink:#ff3d9a;--black:#111;--gold:#d4af37}
+*{box-sizing:border-box}body{font-family:Inter,system-ui,Arial;margin:0;background:#fff;color:#111}
+.header{background:linear-gradient(90deg,#111,#222);color:white;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}
+.container{max-width:1100px;margin:0 auto;padding:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card{background:white;border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);display:flex;flex-direction:column}
+.card img{width:100%;height:220px;object-fit:cover;border-radius:8px}
+.actions{display:flex;gap:8px;margin-top:auto}
+.btn{padding:10px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+.btn-primary{background:var(--black);color:white}
+.btn-wp{background:linear-gradient(90deg,var(--pink),var(--deep-pink));color:white}
+.cart-link{background:var(--pink);color:white;padding:8px 12px;border-radius:10px;text-decoration:none}
+.topbar{display:flex;gap:12px;align-items:center}
+.search{padding:8px;border-radius:8px;border:1px solid #eee}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="background:linear-gradient(135deg,var(--pink),var(--deep-pink));width:48px;height:48px;border-radius:10px;color:white;display:flex;align-items:center;justify-content:center;font-weight:800">FC</div>
+      <div>
+        <div style="font-size:18px;font-weight:700">FC STORE BUSINESS</div>
+        <div style="font-size:12px;color:#f0f0f0">Revenda de roupas íntimas, roupas e acessórios</div>
+      </div>
+    </div>
+    <div class="topbar">
+      <input class="search" id="search" placeholder="Buscar..." />
+      <a class="cart-link" href="cart.html">Carrinho (<span id="count">0</span>)</a>
+      <a class="cart-link" href="admin.html" style="background:#222">Painel</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section>
+    <h2>Produtos</h2>
+    <div id="products" class="grid"></div>
+  </section>
+</main>
+
+<script>
+const API = (location.hostname === 'localhost' ? 'http://localhost:3000' : location.origin) + '/api';
+let PRODUCTS = [];
+let cart = JSON.parse(localStorage.getItem('fc_cart')||'[]');
+function updateCount(){ document.getElementById('count').textContent = cart.reduce((s,i)=>s+i.qty,0); }
+async function load(){
+  try{
+    const res = await fetch(API + '/products');
+    PRODUCTS = await res.json();
+    render(PRODUCTS);
+    updateCount();
+  }catch(e){
+    console.error('Erro carregando produtos', e);
+    document.getElementById('products').innerHTML = '<p>Erro ao carregar produtos. Verifique se o backend está rodando em http://localhost:3000</p>';
+  }
+}
+function render(list){
+  const el = document.getElementById('products');
+  el.innerHTML = list.map(p=>`
+    <div class="card">
+      <img src="${(p.img? (API.replace('/api','')+p.img) : 'assets/placeholder.jpg')}" onerror="this.src='assets/placeholder.jpg'"/>
+      <h3>${p.name}</h3>
+      <div style="font-weight:800">R$ ${Number(p.price).toFixed(2).replace('.',',')}</div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="addToCart(${p.id})">Adicionar</button>
+        <button class="btn btn-wp" onclick="orderNow(${p.id})">Pedir via WhatsApp</button>
+      </div>
+    </div>
+  `).join('');
+}
+function addToCart(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  const ex = cart.find(i=>i.id===id);
+  if(ex) ex.qty++;
+  else cart.push({id:p.id,name:p.name,price:p.price,qty:1,img:(p.img? (API.replace('/api','')+p.img) : 'assets/placeholder.jpg')});
+  localStorage.setItem('fc_cart', JSON.stringify(cart));
+  updateCount();
+  window.location.href = 'cart.html';
+}
+function orderNow(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  const phone = '5549933816445';
+  const msg = encodeURIComponent(`Olá! Tenho interesse no produto: ${p.name} - R$ ${Number(p.price).toFixed(2).replace('.',',')}`);
+  window.open(`https://wa.me/${phone}?text=${msg}`,'_blank');
+}
+document.getElementById('search').addEventListener('input', (e)=>{
+  const q = e.target.value.toLowerCase();
+  render(PRODUCTS.filter(p=>p.name.toLowerCase().includes(q) || (p.tag||'').toLowerCase().includes(q)));
+});
+load();
+</script>
+</body>
+</html>
