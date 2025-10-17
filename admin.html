@@ -1,48 +1,351 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel - Adicionar Produtos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel - Gerenciar Produtos</title>
   <style>
-    body { font-family: Arial; background: #fce4ec; padding: 20px; }
-    input, button { margin: 5px; padding: 10px; width: 100%; max-width: 400px; }
-    button { background: #d63384; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #ff69b4; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fce4ec;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1, h2 {
+      color: #d63384;
+    }
+
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    input, button {
+      margin: 10px 0;
+      padding: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    input[type="file"] {
+      border: none;
+    }
+
+    button {
+      background: #d63384;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background: #ff69b4;
+    }
+
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+      display: none;
+    }
+
+    .success {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .error {
+      background: #ffcdd2;
+      color: #c62828;
+    }
+
+    .previewProduto {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .previewProduto img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    .previewProduto h3 {
+      margin: 10px 0 5px;
+      color: #d63384;
+    }
+
+    .previewProduto p {
+      margin: 5px 0;
+    }
+
+    #listaProdutos {
+      margin-top: 20px;
+    }
+
+    .cardProduto {
+      background: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .cardProduto img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .cardProduto .info {
+      flex: 1;
+    }
+
+    .cardProduto .acoes button {
+      margin-left: 5px;
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .editarBtn {
+      background: #ffc107;
+    }
+
+    .excluirBtn {
+      background: #dc3545;
+      color: white;
+    }
+
   </style>
 </head>
 <body>
-  <h1>📦 Adicionar Novo Produto</h1>
+  <h1>📦 Adicionar ou Editar Produto</h1>
+
   <form id="formProduto">
-    <input type="text" id="nome" placeholder="Nome do produto" required><br>
-    <input type="number" id="preco" placeholder="Preço" required><br>
-    <input type="text" id="categoria" placeholder="Categoria"><br>
-    <input type="file" id="imagem"><br>
-    <button type="submit">Adicionar Produto</button>
+    <input type="text" id="nome" placeholder="Nome do produto" required />
+    <input type="number" id="preco" placeholder="Preço" required />
+    <input type="text" id="categoria" placeholder="Categoria" />
+    <input type="file" id="imagem" accept="image/*" />
+    <button type="submit" id="btnEnviar">Salvar Produto</button>
+    <div id="mensagem" class="message"></div>
   </form>
 
+  <!-- Prévia do produto -->
+  <div class="previewProduto" id="previewProduto">
+    <img id="previewImg" alt="Imagem do Produto">
+    <h3 id="previewNome">Nome do Produto</h3>
+    <p id="previewPreco">Preço: R$ 0,00</p>
+    <p id="previewCategoria">Categoria: -</p>
+  </div>
+
+  <!-- Lista de produtos -->
+  <h2>🛒 Produtos Cadastrados</h2>
+  <div id="listaProdutos" style="width: 100%; max-width: 800px;"></div>
+
   <script>
-    document.getElementById('formProduto').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData();
-      formData.append('name', document.getElementById('nome').value);
-      formData.append('price', document.getElementById('preco').value);
-      formData.append('category', document.getElementById('categoria').value);
-      formData.append('image', document.getElementById('imagem').files[0]);
+    const form = document.getElementById('formProduto');
+    const mensagem = document.getElementById('mensagem');
+    const btnEnviar = document.getElementById('btnEnviar');
+    const nomeInput = document.getElementById('nome');
+    const precoInput = document.getElementById('preco');
+    const categoriaInput = document.getElementById('categoria');
+    const imagemInput = document.getElementById('imagem');
 
-      const res = await fetch('https://fcstore-backend.onrender.com/api/products', {
-        method: 'POST',
-        body: formData
-      });
+    const previewProduto = document.getElementById('previewProduto');
+    const previewImg = document.getElementById('previewImg');
+    const previewNome = document.getElementById('previewNome');
+    const previewPreco = document.getElementById('previewPreco');
+    const previewCategoria = document.getElementById('previewCategoria');
 
-      if (res.ok) {
-        alert('Produto adicionado com sucesso!');
-        document.getElementById('formProduto').reset();
+    let idEditando = null;
+
+    function atualizarPreview() {
+      const nome = nomeInput.value.trim();
+      const preco = precoInput.value.trim();
+      const categoria = categoriaInput.value.trim();
+      const imagem = imagemInput.files[0];
+
+      if (nome && preco && imagem) {
+        previewNome.textContent = nome;
+        previewPreco.textContent = `Preço: R$ ${parseFloat(preco).toFixed(2)}`;
+        previewCategoria.textContent = categoria ? `Categoria: ${categoria}` : 'Categoria: -';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          previewProduto.style.display = 'block';
+        };
+        reader.readAsDataURL(imagem);
       } else {
-        alert('Erro ao adicionar produto.');
+        previewProduto.style.display = 'none';
+      }
+    }
+
+    nomeInput.addEventListener('input', atualizarPreview);
+    precoInput.addEventListener('input', atualizarPreview);
+    categoriaInput.addEventListener('input', atualizarPreview);
+    imagemInput.addEventListener('change', atualizarPreview);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const nome = nomeInput.value.trim();
+      const preco = precoInput.value.trim();
+      const categoria = categoriaInput.value.trim();
+
+      if (!nome || !preco) {
+        mostrarMensagem('Preencha os campos obrigatórios.', 'error');
+        return;
+      }
+
+      btnEnviar.disabled = true;
+      btnEnviar.textContent = 'Salvando...';
+
+      const formData = new FormData();
+      formData.append('name', nome);
+      formData.append('price', preco);
+      formData.append('category', categoria);
+      if (imagemInput.files[0]) {
+        formData.append('image', imagemInput.files[0]);
+      }
+
+      const url = idEditando
+        ? `https://fcstore-backend.onrender.com/api/products/${idEditando}`
+        : `https://fcstore-backend.onrender.com/api/products`;
+
+      const method = idEditando ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          body: formData,
+        });
+
+        if (res.ok) {
+          mostrarMensagem('Produto salvo com sucesso!', 'success');
+          form.reset();
+          previewProduto.style.display = 'none';
+          idEditando = null;
+          carregarProdutos();
+        } else {
+          mostrarMensagem('Erro ao salvar produto.', 'error');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro de conexão com o servidor.', 'error');
+      } finally {
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = 'Salvar Produto';
       }
     });
+
+    function mostrarMensagem(texto, tipo) {
+      mensagem.textContent = texto;
+      mensagem.className = `message ${tipo}`;
+      mensagem.style.display = 'block';
+      setTimeout(() => mensagem.style.display = 'none', 4000);
+    }
+
+    async function carregarProdutos() {
+      const container = document.getElementById('listaProdutos');
+      container.innerHTML = '<p>Carregando produtos...</p>';
+
+      try {
+        const res = await fetch('https://fcstore-backend.onrender.com/api/products');
+        const produtos = await res.json();
+
+        if (!Array.isArray(produtos) || produtos.length === 0) {
+          container.innerHTML = '<p>Nenhum produto cadastrado.</p>';
+          return;
+        }
+
+        container.innerHTML = produtos.map(produto => `
+          <div class="cardProduto">
+            <img src="${produto.image}" alt="${produto.name}">
+            <div class="info">
+              <strong>${produto.name}</strong><br>
+              <span>💰 R$ ${parseFloat(produto.price).toFixed(2)}</span><br>
+              <small>📂 ${produto.category || '-'}</small>
+            </div>
+            <div class="acoes">
+              <button class="editarBtn" onclick="editarProduto('${produto.id}')">✏️</button>
+              <button class="excluirBtn" onclick="excluirProduto('${produto.id}')">🗑️</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<p style="color:red;">Erro ao carregar produtos.</p>';
+      }
+    }
+
+    async function editarProduto(id) {
+      try {
+        const res = await fetch(`https://fcstore-backend.onrender.com/api/products/${id}`);
+        const produto = await res.json();
+
+        idEditando = produto.id;
+        nomeInput.value = produto.name;
+        precoInput.value = produto.price;
+        categoriaInput.value = produto.category || '';
+        previewImg.src = produto.image;
+        previewProduto.style.display = 'block';
+
+        mostrarMensagem(`Editando produto: ${produto.name}`, 'success');
+      } catch {
+        mostrarMensagem('Erro ao carregar produto para edição.', 'error');
+      }
+    }
+
+    async function excluirProduto(id) {
+      if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+
+      try {
+        const res = await fetch(`https://fcstore-backend.onrender.com/api/products/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          mostrarMensagem('Produto excluído com sucesso.', 'success');
+          carregarProdutos();
+        } else {
+          mostrarMensagem('Erro ao excluir produto.', 'error');
+        }
+      } catch {
+        mostrarMensagem('Erro de conexão ao excluir.', 'error');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', carregarProdutos);
   </script>
 </body>
 </html>
