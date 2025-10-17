@@ -1,60 +1,220 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Carrinho - FC STORE BUSINESS</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #fff0f5; margin: 0; padding: 20px; color: #333; }
-    h1 { color: #d63384; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; }
-    input, button { padding: 10px; margin-top: 10px; width: 100%; max-width: 400px; }
-    button { background: #d63384; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #ff69b4; }
+    /* Reset básico */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #fce4ec, #fff0f5);
+      margin: 0;
+      padding: 20px;
+      color: #444;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #d63384;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 700;
+    }
+    #listaCarrinho {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 4px 10px rgba(214, 51, 132, 0.15);
+      overflow: hidden;
+    }
+    #listaCarrinho li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #f0cde6;
+      font-size: 1.1rem;
+    }
+    #listaCarrinho li:last-child {
+      border-bottom: none;
+    }
+    .btn-remover {
+      background: transparent;
+      border: none;
+      color: #d63384;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+    .btn-remover:hover {
+      color: #ff69b4;
+    }
+    .total {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #d63384;
+      margin-bottom: 30px;
+    }
+    input {
+      width: 100%;
+      max-width: 480px;
+      padding: 14px 16px;
+      margin-bottom: 15px;
+      border: 2px solid #d63384;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    input:focus {
+      border-color: #ff69b4;
+      box-shadow: 0 0 8px rgba(255, 105, 180, 0.5);
+    }
+    button {
+      width: 100%;
+      max-width: 480px;
+      padding: 14px;
+      background: #d63384;
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-bottom: 15px;
+      box-shadow: 0 6px 12px rgba(214, 51, 132, 0.3);
+    }
+    button:hover {
+      background: #ff69b4;
+      box-shadow: 0 6px 18px rgba(255, 105, 180, 0.6);
+    }
+    #btnVoltar {
+      background: transparent;
+      color: #d63384;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: underline;
+      padding: 0;
+      box-shadow: none;
+      margin-top: 10px;
+      max-width: 480px;
+    }
+    #btnVoltar:hover {
+      color: #ff69b4;
+      text-decoration: none;
+    }
+    @media (max-width: 520px) {
+      body {
+        padding: 15px;
+      }
+      input, button, #listaCarrinho {
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <h1>🛒 Seu Carrinho</h1>
   <ul id="listaCarrinho"></ul>
-  <p><b>Total:</b> R$ <span id="total">0.00</span></p>
-  <input id="nome" placeholder="Seu nome">
-  <input id="telefone" placeholder="Seu telefone">
-  <button onclick="finalizarPedido()">Finalizar Pedido</button>
+  <p class="total">Total: R$ <span id="total">0.00</span></p>
+
+  <input id="nome" type="text" placeholder="Seu nome" autocomplete="name" />
+  <input id="telefone" type="tel" placeholder="Seu telefone" autocomplete="tel" />
+  <button id="btnFinalizar">Finalizar Pedido</button>
+  <button id="btnVoltar">← Voltar ao Início</button>
 
   <script>
     let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 
+    // Exibe o carrinho na tela
     function exibirCarrinho() {
       const lista = document.getElementById('listaCarrinho');
       let total = 0;
       lista.innerHTML = '';
-      carrinho.forEach(item => {
+
+      if (carrinho.length === 0) {
+        lista.innerHTML = '<li style="text-align:center; color:#999;">Seu carrinho está vazio.</li>';
+        document.getElementById('total').innerText = '0.00';
+        document.getElementById('btnFinalizar').disabled = true;
+        return;
+      }
+
+      carrinho.forEach((item, index) => {
         total += item.preco;
-        lista.innerHTML += `<li>${item.nome} - R$ ${item.preco.toFixed(2)}</li>`;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${item.nome} - R$ ${item.preco.toFixed(2)}</span>
+          <button class="btn-remover" aria-label="Remover ${item.nome}" data-index="${index}">&times;</button>
+        `;
+        lista.appendChild(li);
       });
+
       document.getElementById('total').innerText = total.toFixed(2);
+      document.getElementById('btnFinalizar').disabled = false;
+
+      // Adicionar evento para botões remover
+      document.querySelectorAll('.btn-remover').forEach(btn => {
+        btn.addEventListener('click', removerItem);
+      });
     }
 
+    // Remove um item do carrinho
+    function removerItem(event) {
+      const index = event.target.getAttribute('data-index');
+      if (index !== null) {
+        carrinho.splice(index, 1);
+        localStorage.setItem('carrinho', JSON.stringify(carrinho));
+        exibirCarrinho();
+      }
+    }
+
+    // Finaliza o pedido
     function finalizarPedido() {
-      const nome = document.getElementById('nome').value;
-      const telefone = document.getElementById('telefone').value;
+      const nome = document.getElementById('nome').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+
       if (!nome || !telefone) {
         alert('Por favor, preencha seu nome e telefone.');
         return;
       }
 
+      if (carrinho.length === 0) {
+        alert('Seu carrinho está vazio!');
+        return;
+      }
+
       const itens = carrinho.map(i => `${i.nome} - R$${i.preco.toFixed(2)}`).join('%0A');
       const total = carrinho.reduce((t, i) => t + i.preco, 0).toFixed(2);
-      const mensagem = `🛍️ *Novo Pedido FC STORE BUSINESS*%0A%0A👤 Nome: ${nome}%0A📞 Telefone: ${telefone}%0A%0A${itens}%0A%0A💰 Total: R$ ${total}`;
+      const mensagem = `🛍️ *Novo Pedido FC STORE BUSINESS*%0A%0A👤 Nome: ${encodeURIComponent(nome)}%0A📞 Telefone: ${encodeURIComponent(telefone)}%0A%0A${itens}%0A%0A💰 Total: R$ ${total}`;
       const url = `https://wa.me/5549933816445?text=${mensagem}`;
+
       window.open(url, '_blank');
       localStorage.removeItem('carrinho');
       alert('✅ Pedido enviado com sucesso!');
       window.location.href = 'index.html';
     }
 
+    // Botão voltar para a página inicial
+    function voltarInicio() {
+      window.location.href = 'index.html';
+    }
+
+    // Eventos
+    document.getElementById('btnFinalizar').addEventListener('click', finalizarPedido);
+    document.getElementById('btnVoltar').addEventListener('click', voltarInicio);
+
+    // Inicializa exibição do carrinho
     exibirCarrinho();
   </script>
 </body>
