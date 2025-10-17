@@ -1,68 +1,48 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Admin - FC STORE</title>
-<style>body{font-family:Inter,Arial;margin:0;background:#f7f7f7} .wrap{max-width:980px;margin:24px auto;background:white;padding:18px;border-radius:8px} input,select{padding:8px;margin:6px 0;width:100%} .grid{display:grid;grid-template-columns:1fr 300px;gap:12px} .list-item{display:flex;gap:12px;align-items:center;padding:8px;border-bottom:1px solid #eee}</style>
-</head><body>
-<div class="wrap">
-  <h1>Painel Admin (sem login)</h1>
-  <p>API em <code>http://localhost:3000/api</code> por padrão. Ajuste API_BASE se necessário.</p>
-  <div class="grid">
-    <div>
-      <h3>Novo produto</h3>
-      <form id="form">
-        <input name="name" placeholder="Nome" required/>
-        <input name="category" placeholder="categoria (intimas/roupas/acessorios)" required/>
-        <input name="price" type="number" step="0.01" placeholder="Preço" required/>
-        <input name="tag" placeholder="Tag (ex: Promo)" />
-        <input name="image" type="file" accept="image/*" />
-        <button type="submit">Adicionar</button>
-      </form>
-      <h3 style="margin-top:18px">Editar/Deletar</h3>
-      <div id="items"></div>
-    </div>
-    <div>
-      <h3>Preview</h3>
-      <div id="preview"></div>
-    </div>
-  </div>
-</div>
-<script>
-const API_BASE = 'http://localhost:3000/api';
-const form = document.getElementById('form');
-const items = document.getElementById('items');
-async function load(){
-  const res = await fetch(API_BASE + '/products');
-  const list = await res.json();
-  items.innerHTML = list.map(p=>`
-    <div class="list-item">
-      <img src="${(p.img? ('http://localhost:3000'+p.img) : 'assets/placeholder.jpg')}" style="width:60px;height:45px;object-fit:cover" />
-      <div style="flex:1">
-        <strong>${p.name}</strong><br/><small>${p.category} • R$ ${Number(p.price).toFixed(2).replace('.',',')}</small>
-      </div>
-      <div>
-        <button onclick="edit(${p.id})">Editar</button>
-        <button onclick="del(${p.id})">Deletar</button>
-      </div>
-    </div>
-  `).join('');
-}
-form.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const fd = new FormData(form);
-  const file = form.querySelector('[name=image]').files[0];
-  if(file) fd.append('image', file);
-  const res = await fetch(API_BASE + '/products', { method:'POST', body: fd });
-  const json = await res.json();
-  if(json.ok){ alert('Produto adicionado'); form.reset(); load(); } else alert('Erro');
-});
-window.edit = async (id)=>{
-  const name = prompt('Nome:'); if(name===null) return;
-  const price = prompt('Preço:'); if(price===null) return;
-  const fd = new FormData(); fd.append('name',name); fd.append('price',price);
-  const res = await fetch(API_BASE + '/products/' + id, { method:'PUT', body: fd });
-  const j = await res.json(); if(j.ok){ alert('Atualizado'); load(); } else alert('Erro');
-}
-window.del = async (id)=>{ if(!confirm('Deletar?')) return; const res = await fetch(API_BASE + '/products/' + id, { method:'DELETE' }); const j = await res.json(); if(j.ok) load(); }
-load();
-</script>
-</body></html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel - Adicionar Produtos</title>
+  <style>
+    body { font-family: Arial; background: #fce4ec; padding: 20px; }
+    input, button { margin: 5px; padding: 10px; width: 100%; max-width: 400px; }
+    button { background: #d63384; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #ff69b4; }
+  </style>
+</head>
+<body>
+  <h1>📦 Adicionar Novo Produto</h1>
+  <form id="formProduto">
+    <input type="text" id="nome" placeholder="Nome do produto" required><br>
+    <input type="number" id="preco" placeholder="Preço" required><br>
+    <input type="text" id="categoria" placeholder="Categoria"><br>
+    <input type="file" id="imagem"><br>
+    <button type="submit">Adicionar Produto</button>
+  </form>
+
+  <script>
+    document.getElementById('formProduto').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append('name', document.getElementById('nome').value);
+      formData.append('price', document.getElementById('preco').value);
+      formData.append('category', document.getElementById('categoria').value);
+      formData.append('image', document.getElementById('imagem').files[0]);
+
+      const res = await fetch('https://fcstore-backend.onrender.com/api/products', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        alert('Produto adicionado com sucesso!');
+        document.getElementById('formProduto').reset();
+      } else {
+        alert('Erro ao adicionar produto.');
+      }
+    });
+  </script>
+</body>
+</html>
