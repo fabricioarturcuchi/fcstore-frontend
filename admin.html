@@ -27,11 +27,16 @@
       max-width: 400px;
     }
 
-    input, button {
+    input, textarea, button {
       margin: 10px 0;
       padding: 12px;
       width: 100%;
       box-sizing: border-box;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
     }
 
     input[type="file"] {
@@ -146,7 +151,6 @@
       background: #dc3545;
       color: white;
     }
-
   </style>
 </head>
 <body>
@@ -155,6 +159,9 @@
   <form id="formProduto">
     <input type="text" id="nome" placeholder="Nome do produto" required />
     <input type="number" id="preco" placeholder="Preço" required />
+    <textarea id="descricao" placeholder="Descrição do produto"></textarea>
+    <input type="number" id="estoque" placeholder="Estoque atual" />
+    <input type="text" id="cores" placeholder="Cores disponíveis (ex: vermelho, azul)" />
     <input type="text" id="categoria" placeholder="Categoria" />
     <input type="file" id="imagem" accept="image/*" />
     <button type="submit" id="btnEnviar">Salvar Produto</button>
@@ -167,6 +174,9 @@
     <h3 id="previewNome">Nome do Produto</h3>
     <p id="previewPreco">Preço: R$ 0,00</p>
     <p id="previewCategoria">Categoria: -</p>
+    <p id="previewDescricao">Descrição: -</p>
+    <p id="previewEstoque">Estoque: -</p>
+    <p id="previewCores">Cores: -</p>
   </div>
 
   <!-- Lista de produtos -->
@@ -177,8 +187,12 @@
     const form = document.getElementById('formProduto');
     const mensagem = document.getElementById('mensagem');
     const btnEnviar = document.getElementById('btnEnviar');
+
     const nomeInput = document.getElementById('nome');
     const precoInput = document.getElementById('preco');
+    const descricaoInput = document.getElementById('descricao');
+    const estoqueInput = document.getElementById('estoque');
+    const coresInput = document.getElementById('cores');
     const categoriaInput = document.getElementById('categoria');
     const imagemInput = document.getElementById('imagem');
 
@@ -187,6 +201,9 @@
     const previewNome = document.getElementById('previewNome');
     const previewPreco = document.getElementById('previewPreco');
     const previewCategoria = document.getElementById('previewCategoria');
+    const previewDescricao = document.getElementById('previewDescricao');
+    const previewEstoque = document.getElementById('previewEstoque');
+    const previewCores = document.getElementById('previewCores');
 
     let idEditando = null;
 
@@ -194,12 +211,18 @@
       const nome = nomeInput.value.trim();
       const preco = precoInput.value.trim();
       const categoria = categoriaInput.value.trim();
+      const descricao = descricaoInput.value.trim();
+      const estoque = estoqueInput.value.trim();
+      const cores = coresInput.value.trim();
       const imagem = imagemInput.files[0];
 
       if (nome && preco && imagem) {
         previewNome.textContent = nome;
         previewPreco.textContent = `Preço: R$ ${parseFloat(preco).toFixed(2)}`;
         previewCategoria.textContent = categoria ? `Categoria: ${categoria}` : 'Categoria: -';
+        previewDescricao.textContent = descricao ? `Descrição: ${descricao}` : 'Descrição: -';
+        previewEstoque.textContent = estoque ? `Estoque: ${estoque}` : 'Estoque: -';
+        previewCores.textContent = cores ? `Cores: ${cores}` : 'Cores: -';
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -212,33 +235,22 @@
       }
     }
 
-    nomeInput.addEventListener('input', atualizarPreview);
-    precoInput.addEventListener('input', atualizarPreview);
-    categoriaInput.addEventListener('input', atualizarPreview);
+    [nomeInput, precoInput, categoriaInput, descricaoInput, estoqueInput, coresInput].forEach(input =>
+      input.addEventListener('input', atualizarPreview)
+    );
     imagemInput.addEventListener('change', atualizarPreview);
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const nome = nomeInput.value.trim();
-      const preco = precoInput.value.trim();
-      const categoria = categoriaInput.value.trim();
-
-      if (!nome || !preco) {
-        mostrarMensagem('Preencha os campos obrigatórios.', 'error');
-        return;
-      }
-
-      btnEnviar.disabled = true;
-      btnEnviar.textContent = 'Salvando...';
-
       const formData = new FormData();
-      formData.append('name', nome);
-      formData.append('price', preco);
-      formData.append('category', categoria);
-      if (imagemInput.files[0]) {
-        formData.append('image', imagemInput.files[0]);
-      }
+      formData.append('name', nomeInput.value);
+      formData.append('price', precoInput.value);
+      formData.append('category', categoriaInput.value);
+      formData.append('description', descricaoInput.value);
+      formData.append('stock', estoqueInput.value);
+      formData.append('colors', coresInput.value);
+      if (imagemInput.files[0]) formData.append('image', imagemInput.files[0]);
 
       const url = idEditando
         ? `https://fcstore-backend.onrender.com/api/products/${idEditando}`
@@ -246,12 +258,11 @@
 
       const method = idEditando ? 'PUT' : 'POST';
 
-      try {
-        const res = await fetch(url, {
-          method,
-          body: formData,
-        });
+      btnEnviar.disabled = true;
+      btnEnviar.textContent = 'Salvando...';
 
+      try {
+        const res = await fetch(url, { method, body: formData });
         if (res.ok) {
           mostrarMensagem('Produto salvo com sucesso!', 'success');
           form.reset();
@@ -261,8 +272,8 @@
         } else {
           mostrarMensagem('Erro ao salvar produto.', 'error');
         }
-      } catch (err) {
-        mostrarMensagem('Erro de conexão com o servidor.', 'error');
+      } catch {
+        mostrarMensagem('Erro de conexão.', 'error');
       } finally {
         btnEnviar.disabled = false;
         btnEnviar.textContent = 'Salvar Produto';
@@ -295,7 +306,10 @@
             <div class="info">
               <strong>${produto.name}</strong><br>
               <span>💰 R$ ${parseFloat(produto.price).toFixed(2)}</span><br>
-              <small>📂 ${produto.category || '-'}</small>
+              <small>📂 ${produto.category || '-'}</small><br>
+              <small>📝 ${produto.description || '-'}</small><br>
+              <small>📦 Estoque: ${produto.stock || 0}</small><br>
+              <small>🎨 Cores: ${produto.colors || '-'}</small>
             </div>
             <div class="acoes">
               <button class="editarBtn" onclick="editarProduto('${produto.id}')">✏️</button>
@@ -303,7 +317,7 @@
             </div>
           </div>
         `).join('');
-      } catch (err) {
+      } catch {
         container.innerHTML = '<p style="color:red;">Erro ao carregar produtos.</p>';
       }
     }
@@ -317,6 +331,9 @@
         nomeInput.value = produto.name;
         precoInput.value = produto.price;
         categoriaInput.value = produto.category || '';
+        descricaoInput.value = produto.description || '';
+        estoqueInput.value = produto.stock || '';
+        coresInput.value = produto.colors || '';
         previewImg.src = produto.image;
         previewProduto.style.display = 'block';
 
